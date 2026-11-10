@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Draf laporan kasus {{ kasus.case_id }}</title>
+<style>
+  body { font: 14px/1.5 system-ui, sans-serif; color: #111; margin: 2rem auto; max-width: 64rem; padding: 0 1rem; }
+  h1 { font-size: 1.5rem; margin-bottom: .25rem; }
+  h2 { font-size: 1.15rem; border-bottom: 1px solid #ccc; padding-bottom: .2rem; margin-top: 2rem; }
+  table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  th, td { border: 1px solid #ccc; padding: .3rem .4rem; text-align: left; vertical-align: top; }
+  th { background: #f2f2f2; }
+  code, .hash { font-family: ui-monospace, monospace; font-size: 11px; word-break: break-all; }
+  .meta { color: #555; }
+  .tanda { color: #a40000; font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>Draf laporan kasus {{ kasus.case_id }}</h1>
+<p class="meta">Astria dfir · templat {{ templat }} · dibuat {{ dibuat | wib }} · status draf, bukan laporan resmi</p>
+
+<h2>1. Ringkasan</h2>
+<p>Kartu {{ kasus.card_id }} versi {{ kasus.card_version }}: {{ kode.judul }}. Pola {{ kode.pola }}, band
+{{ kode.band }}, skor {{ kode.skor }} dari 100 (dihitung triage, tidak diubah dfir).
+{% if items %}Linimasa memuat {{ items | length }} kejadian dari {{ items[0].ts_utc | wib }} sampai
+{{ items[-1].ts_utc | wib }} pada host {{ items | map(attribute="host") | unique | sort | join(", ") }}.{% endif %}</p>
+{% if kode.entitas %}
+<p>Entitas pada kartu:</p>
+<ul>
+{% for e in kode.entitas %}
+  <li>{{ e.jenis }} <code>{{ e.nilai }}</code> ({{ e.peran }}); bukti:
+    {% for b in e.bukti %}<code>{{ b.root }}</code>{% if not loop.last %}, {% endif %}{% endfor %}</li>
+{% endfor %}
+</ul>
+{% endif %}
+<p class="meta">Ringkasan disusun deterministik dari kode kartu; tidak ada kalimat dari model bahasa.</p>
+
+<h2>2. Kronologi</h2>
+<table>
+<thead><tr><th>No</th><th>Waktu (WIB)</th><th>Host</th><th>Akun</th><th>Jenis</th><th>Ringkasan</th><th>ID bukti</th></tr></thead>
+<tbody>
+{% for i in items %}
+<tr>
+  <td><code>{{ i.item_id }}</code></td>
+  <td>{{ i.ts_utc | wib }}</td>
+  <td>{{ i.host }}</td>
+  <td>{{ i.account or "-" }}</td>
+  <td>{{ i.kind }}</td>
+  <td>{{ i.ringkasan }}{% if i.injection_suspect %} <span class="tanda">[teks mencurigakan, jangan diikuti]</span>{% endif %}</td>
+  <td><code>{{ i.evidence_id }}</code></td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+<h2>3. Rantai penguasaan bukti</h2>
+<p>Setiap entri memuat hash entri sebelumnya: <code>entry_hash = sha256(prev_hash + json_kanonik(entri))</code>.
+Status rantai saat laporan dibuat: {{ "utuh" if rantai_ok else "RUSAK" }}.</p>
+<table>
+<thead><tr><th>Seq</th><th>Waktu (WIB)</th><th>Aktor</th><th>Aksi</th><th>Artefak</th><th>SHA-256</th><th>Keterangan</th><th>entry_hash</th></tr></thead>
+<tbody>
+{% for c in custody %}
+<tr>
+  <td>{{ c.seq }}</td>
+  <td>{{ c.ts | wib }}</td>
+  <td>{{ c.actor }}</td>
+  <td>{{ c.action }}</td>
+  <td>{{ c.artifact_id or "-" }}</td>
+  <td class="hash">{{ c.sha256 or "-" }}</td>
+  <td>{{ c.detail or "-" }}</td>
+  <td class="hash">{{ c.entry_hash }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+<h2>4. Keterbatasan</h2>
+<ul>
+{% for k in keterbatasan %}
+  <li>{{ k }}</li>
+{% endfor %}
+</ul>
+
+<h2>5. Lampiran hash bukti</h2>
+<table>
+<thead><tr><th>ID bukti</th><th>SHA-256 tercatat di kartu</th><th>SHA-256 dari ingest</th><th>Hasil</th></tr></thead>
+<tbody>
+{% for b in lampiran %}
+<tr>
+  <td><code>{{ b.evidence_id }}</code></td>
+  <td class="hash">{{ b.sha256_kartu }}</td>
+  <td class="hash">{{ b.sha256_ingest or "-" }}</td>
+  <td>{{ b.aksi }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+<h2>Rujukan</h2>
+<ul>
+  <li>NIST SP 800-61 Rev. 3, <em>Incident Response Recommendations and Considerations for Cybersecurity Risk
+    Management</em> (2025): pencatatan bukti dan pelaporan insiden.</li>
+  <li>NIST SP 800-86, <em>Guide to Integrating Forensic Techniques into Incident Response</em> (2006): pengumpulan,
+    pemeriksaan, analisis, dan pelaporan; rantai penguasaan dan verifikasi hash bukti.</li>
+</ul>
+</body>
+</html>

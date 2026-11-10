@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Analisis DFIR mendalam: linimasa dan laporan kasus."
 readme = "README.md"
 requires-python = ">=3.14"
-dependencies = ["astria-common[otel]", "astria-contracts"]
+dependencies = ["astria-common[otel]", "astria-contracts", "jinja2>=3.1.6,<3.2"]
 
 [project.scripts]
 astria-dfir = "astria_dfir.__main__:main"
@@ -13,6 +13,7 @@ astria-dfir = "astria_dfir.__main__:main"
 dev = [
     "pytest==9.2.0",
     "anyio>=4.11",
+    "hypothesis==6.170.15",
     "ruff==0.17.4",
 ]
 
